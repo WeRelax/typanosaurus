@@ -4,39 +4,56 @@
 
 (require racket/gui/base racket/draw)
 
+(define loop%
+  (class object%
+    (super-new)
+
+    (init-field interval [callback void])
+
+    (define canon-ms (quotient 1000 60))
+    (define loop void)
+
+    (define (tick old-time)
+      (let ([new-time (current-inexact-milliseconds)])
+        (yield)
+        (if (> (- new-time old-time) interval)
+            (begin
+              (callback (/ (- new-time old-time) canon-ms))
+              (queue-callback (thunk (loop new-time)) #t))
+            (queue-callback (thunk (loop old-time)) #t))))
+
+    (define/public (start)
+      (set! loop tick)
+      (loop (current-inexact-milliseconds)))
+
+    (define/public (stop)
+      (set! loop void))
+
+    (define/public (set-interval! new-interval)
+      (set! interval new-interval))))
+
 (define game-canvas%
   (class canvas%
     (super-new)
-    (inherit get-width get-height refresh get-dc refresh-now)
+    (inherit get-dc refresh-now)
     (init-field user-on-tick user-on-key fps)
 
-    (define frame-timer null)
-    (define drawing-thread (thread (lambda ()
-                                     (let loop ([delta (thread-receive)])
-                                       (refresh-now (lambda (dc)
-                                                      (user-on-tick dc delta))
-                                                    #:flush? #t)
-                                       (loop (thread-receive))))))
     (define frequency (quotient 1000 fps))
-    (define canon (quotient 1000 60))
-    (define last-tick (current-inexact-milliseconds))
-
-    (define (on-frame)
-      (let* ([now (current-inexact-milliseconds)]
-             [delta (/ (- now last-tick) canon)])
-        (set! last-tick now)
-        (thread-send drawing-thread delta)))
+    (define loop void)
 
     (define/override (on-char key)
       (user-on-key key))
+
     (define/public (start)
-      (set! frame-timer (new timer%
-                             [notify-callback on-frame]
-                             [interval frequency]
-                             [just-once? #f])))
+      (set! loop (new loop%
+                      [interval frequency]
+                      [callback  (lambda (delta)
+                                   (refresh-now (curryr user-on-tick delta)
+                                                #:flush? #f))]))
+      (send loop start))
 
     (define/public (stop)
-      (send frame-timer stop))))
+      (send loop stop))))
 
 (define (make-frame w h title)
   (new frame%

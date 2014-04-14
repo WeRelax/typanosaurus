@@ -117,7 +117,7 @@
 (define stop (define-game
                #:width 800
                #:height 600
-               #:fps 100
+               #:fps 24
                #:title "Type ^ Command"
                #:init init-game
                #:on-frame draw-frame
