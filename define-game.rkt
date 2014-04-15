@@ -11,6 +11,7 @@
     (init-field interval [callback void])
 
     (define canon-ms (quotient 1000 60))
+    (define last-stamp 0)
     (define loop void)
 
     (define (tick old-time)
@@ -22,9 +23,23 @@
               (queue-callback (thunk (loop new-time)) #t))
             (queue-callback (thunk (loop old-time)) #t))))
 
+    (define (timer-tick)
+      (displayln "asf")
+      (let* ([now (current-inexact-milliseconds)]
+             [diff (- now last-stamp)]
+             ;; TODO: this quotient is failing! some argument is not integer
+             [delta (quotient diff canon-ms)]
+             [prev-stamp last-stamp])
+        (set! last-stamp now)
+        (callback delta)
+        (send loop start (floor (- (* interval 2)
+                                   (- (current-inexact-milliseconds) prev-stamp))))))
+
     (define/public (start)
-      (set! loop tick)
-      (loop (current-inexact-milliseconds)))
+      (set! last-stamp (current-inexact-milliseconds))
+      (set! loop (new timer%
+                      [notify-callback timer-tick]
+                      [interval interval])))
 
     (define/public (stop)
       (set! loop void))
