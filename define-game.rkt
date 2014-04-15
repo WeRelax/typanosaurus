@@ -100,7 +100,7 @@
           #:height [h 600]
           #:title [title "*"]
           #:fullscreen? [full? #f]
-          #:fps [fps 60]
+          #:fps [fps 30]
           #:init user-init
           #:on-frame on-tick
           #:on-key on-key
