@@ -30,18 +30,6 @@
              [sleep-time (max 0 (floor (- next-tick-time now)))])
         (send timer start (inexact->exact sleep-time) #t)))
 
-    (define (timer-tick)
-      (displayln "asf")
-      (let* ([now (current-inexact-milliseconds)]
-             [diff (- now last-stamp)]
-             ;; TODO: this quotient is failing! some argument is not integer
-             [delta (quotient diff canon-ms)]
-             [prev-stamp last-stamp])
-        (set! last-stamp now)
-        (callback delta)
-        (send loop start (floor (- (* interval 2)
-                                   (- (current-inexact-milliseconds) prev-stamp))))))
-
     (define/public (start)
       (set! again prepare-next-tick)
       (set! timer (new timer%
@@ -54,17 +42,6 @@
 
     (define/public (set-interval! new-interval)
       (set! interval new-interval))))
-
-(define (my-loop interval)
-  (letrec ([on-timer (λ ()
-                       (displayln "tick..")
-                       (run-again))]
-           [run-again (λ () (send timer start interval #t))]
-           [timer (new timer%
-                       [interval 1000]
-                       [notify-callback on-timer]
-                       [just-once? #t])])
-    (thunk (set! run-again void))))
 
 (define game-canvas%
   (class canvas%
@@ -109,7 +86,6 @@
     (parameterize ([current-eventspace (make-eventspace)])
       (define frame (make-frame w h title))
       (define canvas (make-canvas frame on-tick on-key fps))
-      ;; I think this thread is not useful
       (let* ([dc (send canvas get-dc)])
         (user-init dc)
         (send frame show #t)
