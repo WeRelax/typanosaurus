@@ -10,18 +10,25 @@
 
     (init-field interval [callback void])
 
-    (define canon-ms (quotient 1000 60))
-    (define last-stamp 0)
-    (define loop void)
+    (define timer void)
+    (define again void)
+    (define last-stamp (- (current-inexact-milliseconds)
+                          interval))
 
-    (define (tick old-time)
-      (let ([new-time (current-inexact-milliseconds)])
+    (define (timer-tick)
+      (let* ([now (current-inexact-milliseconds)]
+             [diff (- now last-stamp)]
+             [delta (/ diff interval)])
+        (set! last-stamp now)
         (yield)
-        (if (> (- new-time old-time) interval)
-            (begin
-              (callback (/ (- new-time old-time) canon-ms))
-              (queue-callback (thunk (loop new-time)) #t))
-            (queue-callback (thunk (loop old-time)) #t))))
+        (callback delta)
+        (again now)))
+
+    (define (prepare-next-tick tick-time)
+      (let* ([next-tick-time (+ tick-time interval)]
+             [now (current-inexact-milliseconds)]
+             [sleep-time (max 0 (floor (- next-tick-time now)))])
+        (send timer start (inexact->exact sleep-time) #t)))
 
     (define (timer-tick)
       (displayln "asf")
@@ -36,16 +43,28 @@
                                    (- (current-inexact-milliseconds) prev-stamp))))))
 
     (define/public (start)
-      (set! last-stamp (current-inexact-milliseconds))
-      (set! loop (new timer%
-                      [notify-callback timer-tick]
-                      [interval interval])))
+      (set! again prepare-next-tick)
+      (set! timer (new timer%
+                       [notify-callback timer-tick]
+                       [interval interval]
+                       [just-once? #t])))
 
     (define/public (stop)
-      (set! loop void))
+      (set! again void))
 
     (define/public (set-interval! new-interval)
       (set! interval new-interval))))
+
+(define (my-loop interval)
+  (letrec ([on-timer (λ ()
+                       (displayln "tick..")
+                       (run-again))]
+           [run-again (λ () (send timer start interval #t))]
+           [timer (new timer%
+                       [interval 1000]
+                       [notify-callback on-timer]
+                       [just-once? #t])])
+    (thunk (set! run-again void))))
 
 (define game-canvas%
   (class canvas%

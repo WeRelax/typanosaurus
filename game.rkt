@@ -74,7 +74,7 @@
                             delta)))])
     (set-ray-position! ray dest)
     (set-ray-speed! ray (vector
-                         (+ (vector-direction speed) 0.01)
+                         (+ (vector-direction speed) 0.1)
                          (vector-magnitude speed)))))
 
 ;; drawing
@@ -98,7 +98,7 @@
   (for ([i (range 1 10)])
     (add-ray))
   (send dc set-background (make-color 0 0 0))
-  (send dc set-text-foreground (make-color 255 255 255)))
+  (send dc set-text-foreground (make-color 0 255 255)))
 
 (define (draw-frame dc delta)
   (send dc clear)
@@ -117,7 +117,7 @@
 (define stop (define-game
                #:width 800
                #:height 600
-               #:fps 60
+               #:fps 30
                #:title "Type ^ Command"
                #:init init-game
                #:on-frame draw-frame
