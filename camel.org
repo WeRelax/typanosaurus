@@ -1,0 +1,13 @@
+#+STARTUP: indent
+
+* Plan
+** MON: initial mechanics, textual interface
+** TUE: events and dangers
+** WED: graphics interface /OR/ CharTerm textual interface
+
+* Data Flow
+** (main-loop)
+*** 1. Print everything
+*** 2. Waits for user input
+*** 3. State <- (calculate-next-state (user-interaction))
+*** 4. Win? Loose? Next tick?

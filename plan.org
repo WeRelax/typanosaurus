@@ -1,0 +1,10 @@
+#+STARTUP: indent
+
+* Prototyping
+** <2014-04-26 Sat>
+*** Missiles
+**** Algorithm
+1. Generate a ray. How/When?
+2. Make it go towards a city
+3. The ray stops when touches the ground
+4. Or when the user types it's word

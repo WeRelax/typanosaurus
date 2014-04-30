@@ -34,10 +34,10 @@
 ;;                                   (cdr (remainder)))))))
 
 ;; --- Type Commando ---
-
 ;; state
 
 (define *rays* '())
+(define *cities* '())
 
 (struct point (x y))
 (struct vector (direction magnitude))
@@ -45,6 +45,9 @@
 (struct ray (origin speed position) #:mutable)
 
 ;; logic
+
+(define (make-cities)
+  (let ([start ()])))
 
 (define (make-ray)
   (let ([x (+ 50 (random 700))])
@@ -111,6 +114,8 @@
 
 (define (quit?)
   #f)
+
+
 
 ;; (stop)
 
