@@ -63,43 +63,49 @@
 
 ;; alter game state
 
-(define (inc-miles game-state miles)
-  (match-let ([(list walked target) game-state])
-    (list (+ walked miles) target)))
-
-(define (inc-thirst player-state delta)
-  (match-let ([(list thirst water) player-state])
-    (list (+ thirst delta) water)))
-
-(define (move state speed thirst-delta)
-  (match-let ([(list game-state player-state) state])
-    (list (inc-miles game-state speed)
-          (inc-thirst player-state thirst-delta))))
-
-(define (drink state)
-  (match-let ([(list game-state player-state) state])
-    (let ([thirst (car player-state)]
-          [water (cadr player-state)])
-      (list game-state
-            (list (max 0 (- thirst *thirst-delta*))
-                  (- water *water-delta*))))))
-
 (define (game-error state msg)
   (printf "\n** ~s\n\n" msg)
   state)
 
-(define (process-action action state)
+(define (process-global-action action state)
   (match action
-    [(list 'drink) (drink state)]
-    [(list 'move speed thirst) (move state speed thirst)]
-    [(list 'error msg) (game-error state msg)]))
+    [(list 'error msg) (game-error state msg)]
+    [_ state]))
+
+(define (process-distance distance action)
+  (match action
+    [(list 'move speed _) (+ distance speed)]
+    [_ distance]))
+
+(define (process-target target action)
+  target)
+
+(define (process-thirst thirst action)
+  (match action
+    [(list 'move _ thirst-delta) (+ thirst-delta thirst)]
+    [(list 'drink) (max 0 (- thirst *thirst-delta*))]
+    [_ thirst]))
+
+(define (process-water water action)
+  (match action
+    [(list 'drink) (- water *water-delta*)]
+    [_ water]))
+
+(define (process-action action state)
+  (let ([state (process-global-action action state)])
+    (match-let ([(list
+                  (list distance target)
+                  (list thirst water)) state])
+      (list
+       (list (process-distance distance action) (process-target target action))
+       (list (process-thirst thirst action) (process-water water action))))))
 
 (define (alter-state state actions)
   (match actions
     [(? empty?) state]
     [(cons action rest) (alter-state
-                              (process-action action state)
-                              rest)]))
+                         (process-action action state)
+                         rest)]))
 
 ;; satate := (list game-state player-state [active-things ...])
 ;; game-state := (list walked-distance target-distance)
