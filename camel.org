@@ -1,9 +1,17 @@
 #+STARTUP: indent
 
 * Plan
-** MON: initial mechanics, textual interface
-** TUE: events and dangers
-** WED: graphics interface /OR/ CharTerm textual interface
+** Game: win/lose conditions
+- [X] win
+- [X] loose
+** Game: random events: oasis, traps, accidents
+- [ ] oasis
+- [ ] traps
+- [ ] accidents
+** Game: long-term events: pygmi pursuit, turbo
+** Game: desperate actions: wait for help, final sprint
+** Extras: initial menu, instructions
+** Extras: high scores
 
 * Data Flow
 ** (main-loop)

@@ -5,6 +5,7 @@
 (define *distance-target* 200)
 (define *initial-water-supply* 6)
 (define *thirst-delta* 3)
+(define *thirst-threshold* 5)
 (define *water-delta* 1)
 
 ;; reset
@@ -22,7 +23,21 @@
 ;; I/O
 
 (define (display-state state)
-  (displayln state))
+  (printf "\n")
+  (displayln state)
+  (printf "\n"))
+
+(define (display-actions actions)
+  (map printf
+       (map (lambda (action)
+              (match action
+                [(cons 'oasis _) "\nYou find a refreshing oasis!\n\n"]
+                [(cons 'thieves _) "\nSome thieves stole your water...\n\n"]
+                [(cons 'drink _) "\nYou take a little sip of water.\n\n"]
+                [(list 'move _ 1) "\nSlowly and ahead we go.\n\n"]
+                [(list 'move _ 2) "\nGo, go, go!!\n\n"]
+                [_ ""]))
+            actions)))
 
 (define (get-user-input state)
   (define commands '((1 walk) (2 run) (3 drink)))
@@ -35,14 +50,33 @@
 
 ;; game logic
 
+(define (game-end condition)
+  (printf "\n\n *** \n\n")
+  (match condition
+    ['win (printf "Congrats! You won!!")]
+    ['loose (printf "Your camel and you died miserably...")])
+  (printf "\n\n *** \n\n")
+  #f)
+
 (define (game-running? state)
-  #t)
+  (match-let ([(list
+                (list walked target)
+                (list thirst _)) state])
+    (cond
+     [(>= walked target) (game-end 'win)]
+     [(>= thirst *thirst-threshold*) (game-end 'loose)]
+     [#t #t])))
 
 (define (calculate-next-game-actions state input)
   (let ([game-state (car state)])
-    (match input
-      ;; pygmies, oasis, etc...
-      [_ '()])))
+    '()))
+
+(define (calculante-random-encounters)
+  (let ([dice (random 100)])
+    (cond
+     [(< dice 10) `([oasis ,(random 20)])]
+     [(< dice 5) `([thieves ,(random 10)])]
+     [#t '()])))
 
 (define (can-drink? state)
   (match-let ([(list _ (list _ water)) state])
@@ -52,7 +86,7 @@
   (let ([player-state (cadr state)])
     (match input
       ['drink (if (can-drink? state) '([drink]) '([error "you don't have water!"]))]
-      ['walk `([move ,(random 10) 1])]
+      ['walk `([move ,(random 10) 1] ,@(calculante-random-encounters))]
       ['run `([move ,(+ 5 (random 10)) 2])]
       [_ '()])))
 
@@ -89,6 +123,8 @@
 (define (process-water water action)
   (match action
     [(list 'drink) (- water *water-delta*)]
+    [(list 'oasis n) (+ water n)]
+    [(list 'thieves n) (- water n)]
     [_ water]))
 
 (define (process-action action state)
@@ -116,6 +152,7 @@
   (let loop ([state (generate-initial-state)])
     (when (game-running? state)
       (display-state state)
-      (let ([input (get-user-input state)])
-        (loop (alter-state state
-                           (calculate-next-actions state input)))))))
+      (let* ([input (get-user-input state)]
+             [actions (calculate-next-actions state input)])
+        (display-actions actions)
+        (loop (alter-state state actions))))))
