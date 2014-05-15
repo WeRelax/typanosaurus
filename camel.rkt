@@ -10,22 +10,17 @@
 
 ;; reset
 
-(define (generate-initial-game-state)
-  (list 0 *distance-target*))
-
-(define (generate-initial-player-state)
-  (list 0 *initial-water-supply*))
+(struct game-state (distance target water thirst))
 
 (define (generate-initial-state)
-  (list (generate-initial-game-state)
-        (generate-initial-player-state)))
+  (game-state 0 *distance-target* *initial-water-supply* 0))
 
 ;; I/O
 
 (define (display-state state)
-  (printf "\n")
-  (displayln state)
-  (printf "\n"))
+  (match-let ([(game-state distance target water thirst) state])
+             (printf "\nDistance: ~a, Water supplies: ~a, Thirst: ~a\n\n"
+                     distance water thirst)))
 
 (define (display-actions actions)
   (map printf
@@ -59,17 +54,13 @@
   #f)
 
 (define (game-running? state)
-  (match-let ([(list
-                (list walked target)
-                (list thirst _)) state])
-    (cond
-     [(>= walked target) (game-end 'win)]
-     [(>= thirst *thirst-threshold*) (game-end 'loose)]
-     [#t #t])))
+  (cond
+   [(>= (game-state-distance state) (game-state-target state)) (game-end 'win)]
+   [(>= (game-state-thirst state) *thirst-threshold*) (game-end 'loose)]
+   [#t #t]))
 
 (define (calculate-next-game-actions state input)
-  (let ([game-state (car state)])
-    '()))
+  '())
 
 (define (calculante-random-encounters)
   (let ([dice (random 100)])
@@ -79,16 +70,16 @@
      [#t '()])))
 
 (define (can-drink? state)
-  (match-let ([(list _ (list _ water)) state])
-    (>= water *water-delta*)))
+  (>= (game-state-water state) *water-delta*))
 
 (define (calculate-next-player-actions state input)
-  (let ([player-state (cadr state)])
-    (match input
-      ['drink (if (can-drink? state) '([drink]) '([error "you don't have water!"]))]
-      ['walk `([move ,(random 10) 1] ,@(calculante-random-encounters))]
-      ['run `([move ,(+ 5 (random 10)) 2])]
-      [_ '()])))
+  (match input
+    ['drink (if (can-drink? state)
+                '([drink])
+                '([error "you don't have water!"]))]
+    ['walk `([move ,(random 10) 1] ,@(calculante-random-encounters))]
+    ['run `([move ,(+ 5 (random 10)) 2])]
+    [_ '()]))
 
 (define (calculate-next-actions state input)
   (let ([game-actions (calculate-next-game-actions state input)]
@@ -129,12 +120,10 @@
 
 (define (process-action action state)
   (let ([state (process-global-action action state)])
-    (match-let ([(list
-                  (list distance target)
-                  (list thirst water)) state])
-      (list
-       (list (process-distance distance action) (process-target target action))
-       (list (process-thirst thirst action) (process-water water action))))))
+    (game-state (process-distance (game-state-distance state) action)
+                (process-target (game-state-target state) action)
+                (process-water (game-state-water state) action)
+                (process-thirst (game-state-thirst state) action))))
 
 (define (alter-state state actions)
   (match actions
